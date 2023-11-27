@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    * {
+        @apply m-0 box-border break-words p-0 font-inter;
+    }
+
+    body {
+        @apply bg-background-1;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    h7 {
+        @apply font-heading font-bold;
+    }
+
+    /* Hide number input buttons in Firefox */
+    input[type="number"] {
+        -moz-appearance: textfield;
+    }
+
+    /* Hide number input buttons in other browsers */
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    textarea {
+        resize: none;
+    }
+}
+
+@layer utilities {
+    .bg {
+        background: url("/images/background.png");
+        background-size: cover;
+    }
+}
