@@ -1,17 +1,25 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useElementSize } from "usehooks-ts";
 
 import Button from "../components/common/Button";
 import Container from "../components/common/Container";
+import {
+    showErrorToast,
+    showLoadingToast,
+    showSuccessToast,
+} from "../components/common/ToastNotification";
 import FormControl from "../components/form/FormControl";
 import InputField from "../components/form/InputField";
 import Label from "../components/form/Label";
 import MultiSelectField from "../components/form/MultiSelectField";
 import SelectField from "../components/form/SelectField";
 import TextboxField from "../components/form/TextboxField";
-import { isFieldError, log } from "../utils/general";
+import type { ApiResponseType } from "../types";
+import { apiInstance } from "../utils/api";
+import { isFieldError, logError } from "../utils/general";
 import type { VisaForm } from "../validators/form";
 import { visaFormSchema } from "../validators/form";
 import bannerImg1 from "@/public/images/banner-image-1.png";
@@ -82,17 +90,59 @@ const COUNTRY_OPTIONS = countries.map((country) => ({
 const HomePage = () => {
     const [bannerRef, { width }] = useElementSize();
 
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     const {
         register,
         formState: { errors },
         handleSubmit,
         setValue,
+        watch,
     } = useForm<VisaForm>({
         resolver: zodResolver(visaFormSchema),
     });
 
-    const formSubmitHandler = (data: VisaForm) => {
-        log("Form submitted =>", data);
+    const skills = watch("skills");
+
+    const formSubmitHandler = async (data: VisaForm) => {
+        const toastId = "submitting-form";
+        setIsSubmitting(true);
+
+        try {
+            showLoadingToast({
+                id: toastId,
+                message: "Submitting application!",
+            });
+
+            const response = await apiInstance.post("/applicants", data);
+
+            const responseData = response.data as ApiResponseType & {
+                result: { applicantId: number };
+            };
+
+            if (!responseData.success) {
+                throw new Error(responseData.message);
+            }
+
+            showSuccessToast({
+                id: toastId,
+                message: "Application submitted successfully!",
+            });
+            setIsSubmitted(true);
+        } catch (error) {
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Something went wrong while submitting application!";
+            logError("Error submitting form", error);
+            showErrorToast({
+                id: toastId,
+                message: errorMessage,
+            });
+        }
+
+        setIsSubmitting(false);
     };
 
     return (
@@ -150,207 +200,240 @@ const HomePage = () => {
 
             <div className="h-full bg-background-1 py-16 sm:py-24">
                 <Container className="pb-20">
-                    <form
-                        className="mx-auto flex max-w-lg flex-col space-y-10"
-                        onSubmit={handleSubmit(formSubmitHandler)}
-                    >
-                        <FormControl
-                            isError={isFieldError(errors?.name)}
-                            errorMessage={errors?.name?.message}
+                    {isSubmitted ? (
+                        <div className="pt-10">
+                            <p className="text-center text-xl">
+                                Your application have been submitted
+                                successfully!
+                            </p>
+                        </div>
+                    ) : (
+                        <form
+                            className="mx-auto flex max-w-lg flex-col space-y-10"
+                            onSubmit={handleSubmit(formSubmitHandler)}
                         >
-                            <Label
-                                htmlFor={FORM_FIELDS.name}
-                                className="text-lg"
+                            <FormControl
+                                isError={isFieldError(errors?.name)}
+                                errorMessage={errors?.name?.message}
                             >
-                                What is your name?
-                            </Label>
-                            <InputField
-                                id={FORM_FIELDS.name}
-                                placeholder="Ex. John Doe"
-                                {...register(FORM_FIELDS.name)}
-                            />
-                        </FormControl>
+                                <Label
+                                    htmlFor={FORM_FIELDS.name}
+                                    className="text-lg"
+                                >
+                                    What is your name?
+                                </Label>
+                                <InputField
+                                    id={FORM_FIELDS.name}
+                                    placeholder="Ex. John Doe"
+                                    {...register(FORM_FIELDS.name)}
+                                />
+                            </FormControl>
 
-                        <FormControl
-                            isError={isFieldError(errors?.email)}
-                            errorMessage={errors?.email?.message}
-                        >
-                            <Label
-                                htmlFor={FORM_FIELDS.email}
-                                className="text-lg"
+                            <FormControl
+                                isError={isFieldError(errors?.email)}
+                                errorMessage={errors?.email?.message}
                             >
-                                An email we contact you with
-                            </Label>
-                            <InputField
-                                id={FORM_FIELDS.email}
-                                placeholder="Ex. johndoe@gmail.com"
-                                {...register(FORM_FIELDS.email)}
-                            />
-                        </FormControl>
+                                <Label
+                                    htmlFor={FORM_FIELDS.email}
+                                    className="text-lg"
+                                >
+                                    An email we contact you with
+                                </Label>
+                                <InputField
+                                    id={FORM_FIELDS.email}
+                                    placeholder="Ex. johndoe@gmail.com"
+                                    {...register(FORM_FIELDS.email)}
+                                />
+                            </FormControl>
 
-                        <FormControl
-                            isError={isFieldError(errors?.walletAddress)}
-                            errorMessage={errors?.walletAddress?.message}
-                        >
-                            <Label
-                                htmlFor={FORM_FIELDS.walletAddress}
-                                className="text-lg"
+                            <FormControl
+                                isError={isFieldError(errors?.walletAddress)}
+                                errorMessage={errors?.walletAddress?.message}
                             >
-                                Your Solana wallet address (To receive payment
-                                for your work)
-                            </Label>
-                            <InputField
-                                id={FORM_FIELDS.walletAddress}
-                                placeholder="Ex. Amx7mPH5N99rtfwF91uvE8BJpsaXQzH7VaafZJSvUJbo"
-                                {...register(FORM_FIELDS.walletAddress)}
-                            />
-                        </FormControl>
+                                <Label
+                                    htmlFor={FORM_FIELDS.walletAddress}
+                                    className="text-lg"
+                                >
+                                    Your Solana wallet address (To receive
+                                    payment for your work)
+                                </Label>
+                                <InputField
+                                    id={FORM_FIELDS.walletAddress}
+                                    placeholder="Ex. Amx7mPH5N99rtfwF91uvE8BJpsaXQzH7VaafZJSvUJbo"
+                                    {...register(FORM_FIELDS.walletAddress)}
+                                />
+                            </FormControl>
 
-                        <FormControl
-                            isError={isFieldError(errors?.discordId)}
-                            errorMessage={errors?.discordId?.message}
-                        >
-                            <Label
-                                htmlFor={FORM_FIELDS.discordId}
-                                className="text-lg"
+                            <FormControl
+                                isError={isFieldError(errors?.discordId)}
+                                errorMessage={errors?.discordId?.message}
                             >
-                                What is your Discord username?
-                            </Label>
-                            <InputField
-                                id={FORM_FIELDS.discordId}
-                                placeholder="Ex. johndoe"
-                                {...register(FORM_FIELDS.discordId)}
-                            />
-                        </FormControl>
+                                <Label
+                                    htmlFor={FORM_FIELDS.discordId}
+                                    className="text-lg"
+                                >
+                                    What is your Discord username?
+                                </Label>
+                                <InputField
+                                    id={FORM_FIELDS.discordId}
+                                    placeholder="Ex. johndoe"
+                                    {...register(FORM_FIELDS.discordId)}
+                                />
+                            </FormControl>
 
-                        <FormControl
-                            isError={isFieldError(errors?.discovery)}
-                            errorMessage={errors?.discovery?.message}
-                        >
-                            <Label
-                                htmlFor={FORM_FIELDS.discovery}
-                                className="text-lg"
+                            <FormControl
+                                isError={isFieldError(errors?.discovery)}
+                                errorMessage={errors?.discovery?.message}
                             >
-                                How did you discover Dean&apos;s List?
-                            </Label>
-                            <SelectField
-                                id={FORM_FIELDS.discovery}
-                                placeholder="Select an option"
-                                options={DISCOVERY_OPTIONS}
-                                onSelectOption={(option) => {
-                                    setValue(
-                                        FORM_FIELDS.discovery,
-                                        option?.value as string
-                                    );
-                                }}
-                            />
-                        </FormControl>
+                                <Label
+                                    htmlFor={FORM_FIELDS.discovery}
+                                    className="text-lg"
+                                >
+                                    How did you discover Dean&apos;s List?
+                                </Label>
+                                <SelectField
+                                    id={FORM_FIELDS.discovery}
+                                    placeholder="Select an option"
+                                    options={DISCOVERY_OPTIONS}
+                                    onSelectOption={(option) => {
+                                        setValue(
+                                            FORM_FIELDS.discovery,
+                                            option?.value as string
+                                        );
+                                    }}
+                                />
+                            </FormControl>
 
-                        <FormControl
-                            isError={isFieldError(errors?.country)}
-                            errorMessage={errors?.country?.message}
-                        >
-                            <Label
-                                htmlFor={FORM_FIELDS.country}
-                                className="text-lg"
+                            <FormControl
+                                isError={isFieldError(errors?.country)}
+                                errorMessage={errors?.country?.message}
                             >
-                                Which country are you from?
-                            </Label>
-                            <SelectField
-                                id={FORM_FIELDS.country}
-                                placeholder="Select an option"
-                                options={COUNTRY_OPTIONS}
-                                onSelectOption={(option) => {
-                                    setValue(
-                                        FORM_FIELDS.country,
-                                        option?.value as string
-                                    );
-                                }}
-                            />
-                        </FormControl>
+                                <Label
+                                    htmlFor={FORM_FIELDS.country}
+                                    className="text-lg"
+                                >
+                                    Which country are you from?
+                                </Label>
+                                <SelectField
+                                    id={FORM_FIELDS.country}
+                                    placeholder="Select an option"
+                                    options={COUNTRY_OPTIONS}
+                                    onSelectOption={(option) => {
+                                        setValue(
+                                            FORM_FIELDS.country,
+                                            option?.value as string
+                                        );
+                                    }}
+                                />
+                            </FormControl>
 
-                        <FormControl
-                            isError={isFieldError(errors?.projectDetails)}
-                            errorMessage={errors?.projectDetails?.message}
-                        >
-                            <Label
-                                htmlFor={FORM_FIELDS.projectDetails}
-                                className="text-lg"
+                            <FormControl
+                                isError={isFieldError(errors?.projectDetails)}
+                                errorMessage={errors?.projectDetails?.message}
                             >
-                                Do you have a project? (If &quot;yes,&quot;
-                                Paste Twitter, Discord Links Here)
-                            </Label>
-                            <TextboxField
-                                id={FORM_FIELDS.projectDetails}
-                                placeholder="Ex. https://twitter.com/DeansListDAO"
-                                {...register("projectDetails")}
-                            />
-                        </FormControl>
+                                <Label
+                                    htmlFor={FORM_FIELDS.projectDetails}
+                                    className="text-lg"
+                                >
+                                    Do you have a project? (If &quot;yes,&quot;
+                                    Paste Twitter, Discord Links Here)
+                                </Label>
+                                <TextboxField
+                                    id={FORM_FIELDS.projectDetails}
+                                    placeholder="Ex. https://twitter.com/DeansListDAO"
+                                    {...register("projectDetails")}
+                                />
+                            </FormControl>
 
-                        <FormControl
-                            isError={isFieldError(errors?.expectation)}
-                            errorMessage={errors?.expectation?.message}
-                        >
-                            <Label
-                                htmlFor={FORM_FIELDS.expectation}
-                                className="text-lg"
+                            <FormControl
+                                isError={isFieldError(errors?.expectation)}
+                                errorMessage={errors?.expectation?.message}
                             >
-                                What do you expect from/after your Visa?
-                            </Label>
-                            <SelectField
-                                id={FORM_FIELDS.expectation}
-                                placeholder="Select an option"
-                                options={EXPECTATION_OPTIONS}
-                                onSelectOption={(option) => {
-                                    setValue(
-                                        FORM_FIELDS.expectation,
-                                        option?.value as string
-                                    );
-                                }}
-                            />
-                        </FormControl>
+                                <Label
+                                    htmlFor={FORM_FIELDS.expectation}
+                                    className="text-lg"
+                                >
+                                    What do you expect from/after your Visa?
+                                </Label>
+                                <SelectField
+                                    id={FORM_FIELDS.expectation}
+                                    placeholder="Select an option"
+                                    options={EXPECTATION_OPTIONS}
+                                    onSelectOption={(option) => {
+                                        setValue(
+                                            FORM_FIELDS.expectation,
+                                            option?.value as string
+                                        );
+                                    }}
+                                />
+                            </FormControl>
 
-                        <FormControl
-                            isError={isFieldError(errors?.skills)}
-                            errorMessage={errors?.skills?.message}
-                        >
-                            <Label
-                                htmlFor={FORM_FIELDS.skills}
-                                className="text-lg"
+                            <FormControl
+                                isError={isFieldError(errors?.skills)}
+                                errorMessage={errors?.skills?.message}
                             >
-                                What do you expect from/after your Visa?
-                            </Label>
-                            <MultiSelectField
-                                id={FORM_FIELDS.skills}
-                                placeholder="Select an option"
-                                options={SKILL_OPTIONS}
-                                onSelectOption={(option) => {
-                                    setValue(
-                                        FORM_FIELDS.skills,
-                                        option as string[]
-                                    );
-                                }}
-                            />
-                        </FormControl>
-                        <FormControl
-                            isError={isFieldError(errors?.expectationDetails)}
-                            errorMessage={errors?.expectationDetails?.message}
-                        >
-                            <Label
-                                htmlFor={FORM_FIELDS.expectationDetails}
-                                className="text-lg"
+                                <Label
+                                    htmlFor={FORM_FIELDS.skills}
+                                    className="text-lg"
+                                >
+                                    What skills do you have?
+                                </Label>
+                                <MultiSelectField
+                                    id={FORM_FIELDS.skills}
+                                    placeholder="Select an option"
+                                    options={SKILL_OPTIONS}
+                                    onSelectOption={(option) => {
+                                        setValue(
+                                            FORM_FIELDS.skills,
+                                            option as string[]
+                                        );
+                                    }}
+                                />
+
+                                {skills?.length > 0 && (
+                                    <div className="space-y-3">
+                                        <p className="m-1">Select Skills:</p>
+                                        <div className="flex flex-wrap">
+                                            {skills.map((skill) => {
+                                                return (
+                                                    <span
+                                                        key={skill}
+                                                        className="m-1 rounded-full bg-primary-1 px-4 py-1 text-white"
+                                                    >
+                                                        {skill}
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </FormControl>
+                            <FormControl
+                                isError={isFieldError(
+                                    errors?.expectationDetails
+                                )}
+                                errorMessage={
+                                    errors?.expectationDetails?.message
+                                }
                             >
-                                What do you expect from/after your Visa?
-                                (Elaborate Here as much as possible.)
-                            </Label>
-                            <TextboxField
-                                id={FORM_FIELDS.expectationDetails}
-                                placeholder="Ex. I want to work on a project with Dean's List DAO."
-                                {...register("projectDetails")}
-                            />
-                        </FormControl>
-                        <Button type="submit">Submit</Button>
-                    </form>
+                                <Label
+                                    htmlFor={FORM_FIELDS.expectationDetails}
+                                    className="text-lg"
+                                >
+                                    What do you expect from/after your Visa?
+                                    (Elaborate Here as much as possible.)
+                                </Label>
+                                <TextboxField
+                                    id={FORM_FIELDS.expectationDetails}
+                                    placeholder="Ex. I want to work on a project with Dean's List DAO."
+                                    {...register("expectationDetails")}
+                                />
+                            </FormControl>
+                            <Button isLoading={isSubmitting} type="submit">
+                                Submit
+                            </Button>
+                        </form>
+                    )}
                 </Container>
             </div>
         </div>
