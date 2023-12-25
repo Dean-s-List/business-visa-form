@@ -24,6 +24,12 @@ import type { VisaForm } from "../validators/form";
 import { visaFormSchema } from "../validators/form";
 import bannerImg1 from "@/public/images/banner-image-1.png";
 import bannerImg2 from "@/public/images/banner-image-2.png";
+import pfpImg1 from "@/public/images/pfp-1.png";
+import pfpImg2 from "@/public/images/pfp-2.png";
+import pfpImg3 from "@/public/images/pfp-3.png";
+import pfpImg4 from "@/public/images/pfp-4.png";
+import pfpImg5 from "@/public/images/pfp-5.png";
+import pfpImg6 from "@/public/images/pfp-6.png";
 import countries from "@/src/data/countries.json";
 
 const FORM_FIELDS = {
@@ -189,7 +195,7 @@ const HomePage = () => {
                     </div>
                 </div>
 
-                <div className="absolute -bottom-4 left-0 right-0 flex justify-center sm:-bottom-6 md:-bottom-8">
+                <div className="absolute -bottom-4 left-0 right-0 z-10 flex justify-center sm:-bottom-6 md:-bottom-8">
                     <div className="rounded-2xl bg-white p-2 text-center text-black sm:p-3 md:p-4">
                         <h3 className="text-sm font-medium sm:text-lg md:text-2xl lg:text-3xl">
                             Dean&apos;s List Business Visa Application Form
@@ -198,8 +204,64 @@ const HomePage = () => {
                 </div>
             </section>
 
-            <div className="h-full bg-background-1 py-16 sm:py-24">
-                <Container className="pb-20">
+            <div className="relative h-full bg-background-1 py-16 sm:py-24">
+                <Image
+                    src={pfpImg1}
+                    alt="pfp-1"
+                    style={{ position: "absolute", right: 0, opacity: 0.6 }}
+                />
+                <Image
+                    src={pfpImg2}
+                    alt="pfp-2"
+                    style={{
+                        position: "absolute",
+                        left: 0,
+                        top: "250px",
+                        opacity: 0.6,
+                    }}
+                />
+                <Image
+                    src={pfpImg3}
+                    alt="pfp-3"
+                    style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "650px",
+                        opacity: 0.6,
+                    }}
+                />
+                <Image
+                    src={pfpImg4}
+                    alt="pfp-4"
+                    style={{
+                        position: "absolute",
+                        left: 0,
+                        top: "900px",
+                        opacity: 0.6,
+                    }}
+                />
+                <Image
+                    src={pfpImg5}
+                    alt="pfp-5"
+                    style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "1150px",
+                        opacity: 0.6,
+                    }}
+                />
+                <Image
+                    src={pfpImg6}
+                    alt="pfp-6"
+                    style={{
+                        position: "absolute",
+                        left: 0,
+                        top: "1450px",
+                        opacity: 0.6,
+                    }}
+                />
+
+                <Container className="relative z-10 pb-20">
                     {isSubmitted ? (
                         <div className="pt-10">
                             <p className="text-center text-xl">
@@ -209,7 +271,7 @@ const HomePage = () => {
                         </div>
                     ) : (
                         <form
-                            className="mx-auto flex max-w-lg flex-col space-y-10"
+                            className="z-20 mx-auto flex max-w-lg flex-col space-y-10"
                             onSubmit={handleSubmit(formSubmitHandler)}
                         >
                             <FormControl
